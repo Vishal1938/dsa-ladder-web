@@ -13,8 +13,8 @@ export interface ProblemDetail {
 }
 export type Status = "ACCEPTED" | "WRONG_ANSWER" | "COMPILE_ERROR" | "RUNTIME_ERROR" | "TIME_LIMIT_EXCEEDED" | "OUTPUT_LIMIT_EXCEEDED" | "INTERNAL_ERROR";
 export interface CaseResult { index: number; passed: boolean; hidden: boolean; input?: string; expected?: string; actual?: string; stdout?: string; runtimeMicros?: number }
-export interface Verdict { status: Status; passed: number; total: number; runtimeMs: number; compileOutput?: string; error?: string; cases: CaseResult[]; submissionId?: number; saved?: boolean }
-export interface User { id: number; email: string; displayName: string }
+export interface Verdict { status: Status; passed: number; total: number; runtimeMs: number; compileOutput?: string; error?: string; cases: CaseResult[]; submissionId?: string; saved?: boolean }
+export interface User { id: string; email: string; displayName: string }
 export interface AuthResponse { token: string; user: User }
-export interface Submission { id: number; problemSlug: string; status: Status; passed: number; total: number; runtimeMs: number; createdAt: string; code?: string }
+export interface Submission { id: string; problemSlug: string; status: Status; passed: number; total: number; runtimeMs: number; createdAt: string; code?: string }
 export interface Stats { solved: number; attempted: number; totalProblems: number; solvedByTopic: Record<string, number>; recent: Submission[] }

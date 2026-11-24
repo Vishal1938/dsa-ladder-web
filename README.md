@@ -39,10 +39,11 @@ To point at a different API in development: `VITE_API_TARGET=http://localhost:90
 
 It's a static site. Build with `npm run build` and serve `dist/`.
 
-1. Set **`VITE_API_URL`** to the deployed API's URL (e.g. `https://dsa-ladder-api.example.app`) in your host's build settings.
-   It is read at build time, so rebuild after changing it.
-2. Make every path serve `index.html` (single-page app). `vercel.json` (Vercel) and `public/_redirects` (Netlify, Cloudflare Pages) already do this.
-3. Add the site's URL to the API's **`CORS_ORIGINS`**.
+1. In your host's build settings (Vercel: Project → Settings → Environment Variables), set **`VITE_API_URL`** to the
+   deployed API's base URL with no trailing slash, e.g. `https://dsa-ladder-api.example.app`. It is the only env var.
+2. Deploy. `VITE_API_URL` is read at build time, so redeploy after changing it.
+3. Make every path serve `index.html` (single-page app). `vercel.json` (Vercel) and `public/_redirects` (Netlify, Cloudflare Pages) already do this.
+4. Add the site's URL (e.g. `https://dsa-ladder-web.vercel.app`) to the API's **`CORS_ORIGINS`**.
 
 A `Dockerfile` (nginx) is included for container hosts: `docker build --build-arg VITE_API_URL=https://… -t dsa-ladder-web .`
 
