@@ -1,5 +1,7 @@
 // Bundle Monaco locally (no CDN) with only the Java language.
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
+// editor.api is only the core; edcore.main adds the suggest widget, hovers, find, folding, etc.
+import "monaco-editor/esm/vs/editor/edcore.main";
 import "monaco-editor/esm/vs/basic-languages/java/java.contribution";
 import EditorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
 import { loader } from "@monaco-editor/react";

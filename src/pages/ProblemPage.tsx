@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Editor, { type OnMount } from "@monaco-editor/react";
 import { monaco } from "../lib/monaco";
+import { registerJavaIntellisense, setCompileMarkers } from "../lib/javaIntellisense";
 import { api } from "../api/client";
-import type { ProblemDetail, Submission, Verdict } from "../api/types";
+import type { Diagnostic, ProblemDetail, Submission, Verdict } from "../api/types";
 import { useAsync } from "../lib/useAsync";
 import { useAuth } from "../lib/auth";
 import { renderMarkdown } from "../lib/markdown";
@@ -43,9 +44,45 @@ function Workspace({ p }: { p: ProblemDetail }) {
   const [reqError, setReqError] = useState<string | null>(null);
   const [solved, setSolved] = useState(p.solved);
   const [subsKey, setSubsKey] = useState(0);
+  const [issues, setIssues] = useState<Diagnostic[]>([]);
+  const [check, setCheck] = useState<"idle" | "checking" | "done">("idle");
+  const checkSeq = useRef(0);
+  const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
   const actions = useRef({ run: () => {}, submit: () => {} });
 
   useEffect(() => { const t = setTimeout(() => saveCode(p.slug, code), 400); return () => clearTimeout(t); }, [code, p.slug]);
+
+  const showIssues = useCallback((next: Diagnostic[]) => {
+    setIssues(next);
+    const model = editorRef.current?.getModel();
+    if (model) setCompileMarkers(model, next);
+  }, []);
+
+  useEffect(() => {
+    const seq = ++checkSeq.current;
+    if (code === p.starterCode) { showIssues([]); setCheck("idle"); return; }
+    setCheck("checking");
+    const t = setTimeout(async () => {
+      try {
+        const { diagnostics } = await api.check(p.slug, code);
+        if (seq !== checkSeq.current) return;
+        showIssues(diagnostics);
+        setCheck("done");
+      } catch { if (seq === checkSeq.current) setCheck("idle"); /* keep the last markers */ }
+    }, 900);
+    return () => { clearTimeout(t); checkSeq.current++; };
+  }, [code, p.slug, p.starterCode, showIssues]);
+
+  const errors = issues.filter(d => d.severity === "error");
+
+  function goToFirstError() {
+    const editor = editorRef.current;
+    const first = [...errors].sort((a, b) => a.startLine - b.startLine || a.startColumn - b.startColumn)[0];
+    if (!editor || !first) return;
+    editor.setPosition({ lineNumber: first.startLine, column: first.startColumn });
+    editor.revealLineInCenter(first.startLine);
+    editor.focus();
+  }
 
   const customised = useMemo(() => JSON.stringify(cases) !== JSON.stringify(p.sampleInputs), [cases, p.sampleInputs]);
 
@@ -74,6 +111,10 @@ function Workspace({ p }: { p: ProblemDetail }) {
   actions.current = { run, submit };
 
   const onMount: OnMount = (editor) => {
+    editorRef.current = editor;
+    registerJavaIntellisense();
+    const model = editor.getModel();
+    if (model) setCompileMarkers(model, issues);
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => actions.current.run());
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Enter, () => actions.current.submit());
   };
@@ -137,6 +178,11 @@ function Workspace({ p }: { p: ProblemDetail }) {
         <section className="ws-right" aria-label="Code">
           <div className="editor-bar">
             <span className="lang">Java 21</span>
+            {check === "checking" && <span className="check-status">Checking…</span>}
+            {check === "done" && errors.length === 0 && <span className="check-status ok">✓ Compiles</span>}
+            {check === "done" && errors.length > 0 && (
+              <button className="check-status bad" onClick={goToFirstError}>{errors.length} compile error{errors.length === 1 ? "" : "s"}, show first</button>
+            )}
             <span className="spacer" />
             <button className="btn ghost sm" onClick={resetCode}>Reset code</button>
           </div>
@@ -156,6 +202,13 @@ function Workspace({ p }: { p: ProblemDetail }) {
                 automaticLayout: true,
                 padding: { top: 12 },
                 renderLineHighlight: "line",
+                quickSuggestions: { other: true, comments: false, strings: false },
+                suggestOnTriggerCharacters: true,
+                wordBasedSuggestions: "off",
+                snippetSuggestions: "inline",
+                tabCompletion: "on",
+                suggest: { showWords: false, preview: true },
+                fixedOverflowWidgets: true,
               }}
             />
           </div>

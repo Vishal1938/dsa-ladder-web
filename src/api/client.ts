@@ -1,4 +1,4 @@
-import type { AuthResponse, ProblemDetail, Stats, Submission, TopicDetail, TopicSummary, User, Verdict } from "./types";
+import type { AuthResponse, CheckResult, ProblemDetail, Stats, Submission, TopicDetail, TopicSummary, User, Verdict } from "./types";
 
 const TOKEN_KEY = "dsaladder.token";
 
@@ -37,6 +37,7 @@ export const api = {
   problem: (slug: string) => request<ProblemDetail>("GET", `/problems/${slug}`),
   run: (slug: string, code: string, inputs?: string[][]) => request<Verdict>("POST", `/problems/${slug}/run`, { code, inputs }),
   submit: (slug: string, code: string) => request<Verdict>("POST", `/problems/${slug}/submit`, { code }),
+  check: (slug: string, code: string) => request<CheckResult>("POST", `/problems/${slug}/check`, { code }),
   submissions: (slug: string) => request<Submission[]>("GET", `/problems/${slug}/submissions`),
   register: (email: string, password: string, displayName: string) => request<AuthResponse>("POST", "/auth/register", { email, password, displayName }),
   login: (email: string, password: string) => request<AuthResponse>("POST", "/auth/login", { email, password }),
